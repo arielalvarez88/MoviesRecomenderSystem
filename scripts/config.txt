@@ -1,0 +1,9 @@
+[config]
+
+k_neighbors = 10
+data_folder = ../data
+output_users_folder = users
+output_movies_folder = movies
+original_rating_file=ratings.dat
+original_movies_file= "movies.dat"
+
