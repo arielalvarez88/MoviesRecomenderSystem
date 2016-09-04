@@ -7,3 +7,5 @@ output_movies_folder = movies
 original_rating_file=ratings.dat
 original_movies_file= "movies.dat"
 
+items_folder_path = ../data/movies
+
