@@ -8,4 +8,5 @@ original_rating_file=ratings.dat
 original_movies_file= "movies.dat"
 
 items_folder_path = ../data/movies
+users_folder_path = ../data/users
 

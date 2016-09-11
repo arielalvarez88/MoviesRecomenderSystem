@@ -19,11 +19,7 @@ class PearsonCorrelationComputer(object):
     def __init__(self):
       
         self.config = Config()
-        
-            
-        self.test_columns = ['Train', 'K' , 'MAE', 'Neighbors Time', '' , 'Throughput']
         self.pearson_dict = {}
-        self.movies_ids = []
         self.file_writer = DataWriter()
     
     
@@ -50,13 +46,16 @@ class PearsonCorrelationComputer(object):
         self.pearson_dict[id_j][id_i] = pc
     
     
-    def __calculate_pearson_corr(self,matrix_J_U_subset):
+    def __calculate_pearson_corr(self,matrix_J_U, matrix_J_U_subset):
         """Computes pearson corrlation between each pair of movies
         
         Args:
         
-            matrix_J_U_subset (pandas.DataFrame) : Dataframe with movies to
-                which you want to compute their K neighbors.
+            matrix_J_U (pandas.DataFrame) : Dataframe with movies to
+                which you want to compute the Person Correlation.
+                
+            train_subset (pandas.DataFrame) : The subset of movies
+                used to compute the pearson correlation.
         Returns:
         
             tuple: A dictionary as first element and the time it took to calculate  
@@ -80,24 +79,36 @@ class PearsonCorrelationComputer(object):
             
         """
         init_time = datetime.now()
+        all_movies_ids = matrix_J_U.index
+        subeset_movies_ids = matrix_J_U_subset.index
         
-        for i in range(0, matrix_J_U_subset.shape[0]):
-            for j in range(i+1, matrix_J_U_subset.shape[0]):
-                indeces_in_common = matrix_J_U_subset[j] != 0
-                indeces_in_common = indeces_in_common * matrix_J_U_subset[i] != 0
-                i_common = matrix_J_U_subset[i][indeces_in_common]
-                j_common = matrix_J_U_subset[j][indeces_in_common]
-                pearson_ij, _ = pearsonr(i_common, j_common)
-                movie_i_id = self.movies_ids[i]            
-                movie_j_id = self.movies_ids[j]
-                self.__save_to_dict(movie_i_id,movie_j_id,pearson_ij)           
+        matrix_J_U = matrix_J_U.values
+        matrix_J_U_subset = matrix_J_U_subset.values
+        
+        for i, movie_i_id in enumerate(all_movies_ids):
+            for j, movie_j_id in enumerate(subeset_movies_ids):
+                
+                movie_j = matrix_J_U_subset[j]
+                movie_i = matrix_J_U[i]
+                
+                common_ratings_idx = movie_j != 0
+                common_ratings_idx = common_ratings_idx & (movie_i != 0)
+                
+                ratings_i_common = movie_i[common_ratings_idx]
+                ratings_j_common = movie_j[common_ratings_idx]
+
+                pearson_ij, _ = pearsonr(ratings_i_common, ratings_j_common)
+                if(np.isnan(pearson_ij)):
+                    continue
+                
+                self.__save_to_dict(movie_i_id,movie_j_id,pearson_ij)         
                 
         timeDelta = datetime.now() - init_time 
         return  (self.pearson_dict, timeDelta.total_seconds())      
     
     
    
-    def compute_pc(self, all_data = None, train_percentages = [0.001]):
+    def compute_pc(self, all_data = None, train_subset = None):
      
         """Calculates pearson correlation between movies and saves them to files.
         
@@ -105,41 +116,16 @@ class PearsonCorrelationComputer(object):
             all_data (pandas.Dataframe) : All data as read from the original 
                 ratings file.
         
-            train_percentages (list) : List of floating numbers representing 
-                the percentage of the total number of movies which the K
-                neighbors will be computed.
-        """   
-        if(all_data is None):
-            all_data = pd.read_table(self.config.ratings_file_path, sep='::', skiprows=0, header=None, names=['user_id', 'movie_id', 'rating', 'timestamp'])
-    
-        self.movies_ids = all_data['movie_id'].unique()
-        
-        self.results = pd.DataFrame(columns=self.test_columns)
-        
-        matrix_J_U = all_data.pivot(columns='user_id', index='movie_id', values='rating')
-        self.movies_ids = matrix_J_U.index.values
-        
-        matrix_J_U = matrix_J_U.values
-        
-        #Replace NaN for 0
-        matrix_J_U[np.isnan(matrix_J_U)] = 0
-        
+            train_subset (pandas.Dataframe)  : Subset of data to use when founding
+                PCs.
+        """
         time_neighbors = 0
-        product_count = matrix_J_U.shape[0]
-        range_of_rows = range(0, product_count)
+                
+        self.pearson_dict, time_neighbors  = self.__calculate_pearson_corr(all_data,train_subset)
             
-    
-        for train_percentage in train_percentages:
-            subset_rows = int(matrix_J_U.shape[0] * train_percentage)
-                    
-            movies_subset = matrix_J_U[ random.sample(range_of_rows,  subset_rows) , :]
-            self.pearson_dict, time_neighbors  = self.__calculate_pearson_corr(movies_subset)
-            
-            self.results.append({'Train' : train_percentage, 'Neighbors Time' : time_neighbors} , ignore_index=True)
-            break
-    
-        self.file_writer.save_neighbors_file(self.pearson_dict)
+        #self.file_writer.save_neighbors_file(self.pearson_dict)
         self.file_writer.update_items(self.pearson_dict)
-    
+        
         print "Time spent in neighbors calculations {}".format(time_neighbors)
-    
+        return  self.pearson_dict, time_neighbors
+        

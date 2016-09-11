@@ -1,6 +1,7 @@
 import copy
 from config import Config
 from data_io import DataReader
+import numpy as np
 
 class DataFormatter(object):
     """Gathers all data for the movies and create fast access files.
@@ -104,6 +105,24 @@ class DataFormatter(object):
         self.write_to_json_files(self.all_user_data)
         self.write_to_json_files(self.all_movie_data)      
                 
-    
-    
+    @staticmethod
+    def pivot_data(data):
+        """Transform raw data into formated numpy matrix.
+        
+        Transforms raw data into a matrix where each row represents a movie,
+        each column a user and each value the rating that the user gave the movie.
+        
+        Args:
+            
+            data(pandas.Dataframe): Data as presented in the raw file.
+        
+        Returns:
+            pandas.Dataframe: The formatted pandas.Dataframe.
+        """
+        data = data.pivot(columns='user_id', index='movie_id', values='rating')        
+                
+        #Replace NaN for 0
+        data[np.isnan(data)] = 0
+        
+        return data
                 

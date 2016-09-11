@@ -8,10 +8,22 @@ class Config(object):
         self.__rating_file_path = "{}/{}".format(configParser.get("config", "data_folder"), configParser.get("config", "original_rating_file") )
         self.__output_movies_folder = "{}/{}".format(configParser.get("config", "data_folder"), configParser.get("config",'output_movies_folder'))
         self.__output_users_folder = "{}/{}".format(configParser.get("config", "data_folder"), configParser.get("config",'output_users_folder'))
-        
+        self.__users_folder_path = configParser.get("config",'users_folder_path')
         self.__items_folder_path= configParser.get('config', 'items_folder_path')
         self.__ratings_file = configParser.get('config', 'original_rating_file')
         self.__ratings_file_path = '{}/{}'.format(self.__data_folder, configParser.get('config', 'original_rating_file') )
+
+    def get_users_folder_path(self):
+        return self.__users_folder_path
+
+
+    def set_users_folder_path(self, value):
+        self.__users_folder_path = value
+
+
+    def del_users_folder_path(self):
+        del self.__users_folder_path
+
 
     def get_rating_file_path(self):
         return self.__rating_file_path
@@ -103,4 +115,5 @@ class Config(object):
     items_folder_path = property(get_items_folder_path, set_items_folder_path, del_items_folder_path, "items_folder_path's docstring")
     ratings_file = property(get_ratings_file, set_ratings_file, del_ratings_file, "ratings_file's docstring")
     ratings_file_path = property(get_ratings_file_path, set_ratings_file_path, del_ratings_file_path, "ratings_file_path's docstring")
+    users_folder_path = property(get_users_folder_path, set_users_folder_path, del_users_folder_path, "users_folder_path's docstring")
        

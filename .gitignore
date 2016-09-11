@@ -3,3 +3,4 @@
 ./data_with_k
 ./scripts/k_neighbors.json
 ./scripts/k_neighbors_bk.json
+./scripts/*.pyc
