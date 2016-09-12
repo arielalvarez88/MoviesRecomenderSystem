@@ -4,3 +4,4 @@
 ./scripts/k_neighbors.json
 ./scripts/k_neighbors_bk.json
 ./scripts/*.pyc
+./scripts/tests.py
