@@ -82,17 +82,21 @@ class PearsonCorrelationComputer(object):
         all_movies_ids = matrix_J_U.index
         subeset_movies_ids = matrix_J_U_subset.index
         
-        matrix_J_U = matrix_J_U.values
-        matrix_J_U_subset = matrix_J_U_subset.values
+        #matrix_J_U = matrix_J_U.values
+        #matrix_J_U_subset = matrix_J_U_subset.values
         
-        for i, movie_i_id in enumerate(all_movies_ids):
-            for j, movie_j_id in enumerate(subeset_movies_ids):
+        for movie_i_id in all_movies_ids:
+            for movie_j_id in subeset_movies_ids:
                 
-                movie_j = matrix_J_U_subset[j]
-                movie_i = matrix_J_U[i]
+                movie_j = matrix_J_U_subset.loc[movie_j_id]
+                movie_i = matrix_J_U.loc[movie_i_id]
+                
+                movie_j = movie_j.fillna(0)
+                movie_i = movie_i.fillna(0)
                 
                 common_ratings_idx = movie_j != 0
                 common_ratings_idx = common_ratings_idx & (movie_i != 0)
+                
                 
                 ratings_i_common = movie_i[common_ratings_idx]
                 ratings_j_common = movie_j[common_ratings_idx]

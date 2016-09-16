@@ -7,7 +7,7 @@ class DataAnalyst(object):
     """Provides analytics of the data.
     """
     def __init__(self):
-        self.report_metrics = ['Train_percentage', 'K_neighbors' , 'MAE', 'PC_calc_time', 'Throughput', "Time_MAE"]
+        self.report_metrics = ['Train_percentage', 'Movies_count', 'K_neighbors' , 'MAE', 'PC_calc_time', 'Throughput', "Time_MAE"]
 
     
     def provide_analysis(self, data_frame = None):
@@ -54,18 +54,58 @@ class DataAnalyst(object):
         
         plt.show()
         
-    def simple_graph(self, xlabel,ylabel, xdata, ydata):
-        fig = plt.figure()
-        fig.add_subplot(111, xlabel = xlabel, ylabel=ylabel)        
-        plt.plot(xdata,ydata,figure=fig)
+    def simple_graph(self, xlabel,ylabel, xdata, ydata, figure = None,label= '', line_format = 'b-'):
+        """Utility function to plot in a figure.
         
+        Args:
+            
+            xlabel (string) : Label in X axis.
+            
+            ylabel (string) : Label in Y axis.
+            
+            xdata (list) : Data for X axis.
+            
+            ydata (list) : Data for Y axis.
+            figure (matplotlib.figure.Figure): The figure where to plot. A new one is
+                created if is None.
+                
+            label (string) : Title of the figure.
+            
+            line_format (string): String with line format and color code a la
+                matplotlib.
+        Return:
+            matplotlib.figure.Figure: The figure where the plot was done.
+        """
+        fig = plt.figure() if figure is None else figure
+        fig.add_subplot(111, xlabel = xlabel, ylabel=ylabel)        
+        plt.plot(xdata,ydata,line_format,figure=fig, label=label)        
+        return fig
+        
+        
+
+    def compare_train_percentage(self, results):
+        
+        figure = None
+
+        #MAE vs Train_percentage
+        movies_subsets = results['Movies_count'].unique()
+        line_formats = ['r-','b-','k-','r-','g-']
+        for i, movies_subset in enumerate(movies_subsets):
+            values_for_subset = results[results['Movies_count'] == movies_subset]
+            line_label = '# of movies = {}'.format(movies_subset)
+            figure = self.simple_graph("Train_percentage", "MAE", values_for_subset['Train_percentage'], values_for_subset['MAE'], figure = figure, label=line_label, line_format =line_formats[i])
+        
+        plt.legend()            
+        
+        figure.suptitle("Train_percentage vs MAE for different movies subsets")
+        plt.show()
         
     def graph_results(self,results):
-        print "Brumm brumm"
+        
         """Generate graphs showing results
         Args:
             dict: The results containing the following values.
-        """        
+        """                                                
         
         #K vs MAE         
         self.simple_graph("Number of Neighbors","MAE", results['K_neighbors'], results['MAE'])
@@ -81,6 +121,7 @@ class DataAnalyst(object):
         
         #Train_percentage vs Time_MAE 
         self.simple_graph("Train_percentage","Time_MAE", results['Train_percentage'], results['Time_MAE'])
+         
          
 
         plt.show()
