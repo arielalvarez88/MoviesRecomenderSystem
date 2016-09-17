@@ -79,27 +79,31 @@ class PearsonCorrelationComputer(object):
             
         """
         init_time = datetime.now()
-        all_movies_ids = matrix_J_U.index
-        subeset_movies_ids = matrix_J_U_subset.index
-        
+        all_movies_ids = matrix_J_U.index.values.tolist()
+        subeset_movies_ids = matrix_J_U_subset.index.values.tolist()
+        movies_checked = {}
         #matrix_J_U = matrix_J_U.values
         #matrix_J_U_subset = matrix_J_U_subset.values
         
         for movie_i_id in all_movies_ids:
             for movie_j_id in subeset_movies_ids:
                 
-                movie_j = matrix_J_U_subset.loc[movie_j_id]
-                movie_i = matrix_J_U.loc[movie_i_id]
+                if(movie_i_id in movies_checked and movie_j_id in movies_checked[movie_i_id] ):
+                    continue
                 
-                movie_j = movie_j.fillna(0)
-                movie_i = movie_i.fillna(0)
+                self.__save_to_dict(movie_i_id, movie_j_id, True)                              
+                  
+                movie_j = matrix_J_U_subset.loc[movie_j_id]
+                movie_i = matrix_J_U.loc[movie_i_id]                                
                 
                 common_ratings_idx = movie_j != 0
-                common_ratings_idx = common_ratings_idx & (movie_i != 0)
-                
+                common_ratings_idx = common_ratings_idx & (movie_i != 0)                                
                 
                 ratings_i_common = movie_i[common_ratings_idx]
                 ratings_j_common = movie_j[common_ratings_idx]
+                
+                if(len(ratings_j_common) <= 0  or len(ratings_i_common) <= 0 ):
+                    continue
 
                 pearson_ij, _ = pearsonr(ratings_i_common, ratings_j_common)
                 if(np.isnan(pearson_ij)):

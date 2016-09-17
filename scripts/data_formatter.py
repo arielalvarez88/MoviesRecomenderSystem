@@ -122,8 +122,8 @@ class DataFormatter(object):
         data = data.pivot(columns='user_id', index='movie_id', values='rating')        
                 
         #Replace NaN for 0
-        #data[np.isnan(data)] = 0
-        data = data.to_sparse()
+        data[np.isnan(data)] = 0
+        #data = data.to_sparse()
         
         return data
                 
