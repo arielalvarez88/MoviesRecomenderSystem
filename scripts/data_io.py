@@ -12,12 +12,12 @@ class DataWriter(object):
      
             
     
-    def update_items(self,info_dict):
+    def update_items(self,PC_matrix):
         """Update k_neighbors property in movie's fast access json files.
         
         Args:
-            info_dict (dict) : Maps a movie to each of its Pearson Correlation
-                coeficients between the other movies.
+            PC_matrix(pandas.Dataframe) : Dataframe with all Pearson Correlation
+                coeficients between each movie pairs. 
                 
                     Examples:
                         {
@@ -31,25 +31,28 @@ class DataWriter(object):
                         }
         
         """
-        for item_id, neighbor_data in info_dict.iteritems():
+        for item_id, pc_with_others in PC_matrix.iterrows():
             item_file_name = '{}/{}.json'.format(self.config.items_folder_path, item_id)
             print(item_file_name)
             with open(item_file_name, 'r+') as data_file:
                     print("data file{}".format(data_file))    
                     jsonData= json.load(data_file)
-                    jsonData['k_neighbors'] = neighbor_data
+                    jsonData['k_neighbors'] = json.loads(pc_with_others.to_json())
                     data_file.seek(0)
                     data_file.truncate()
-                    json.dump(jsonData,data_file)
+                    try:                        
+                        json.dump(jsonData,data_file)
+                    except:
+                        print("why")
                     movie_cache[item_id] = jsonData
                     data_file.close()
     
-    def save_neighbors_file(self,  neighbors_dict):
+    def save_neighbors_file(self,  PC_matrix):
         """Save the map from each movie to all of its PC with other movies.
         
         Args:
         
-            neighbors_dict: Dictionary with all the PC between movies.
+            PC_matrix(pandas.Dataframe): Dictionary with all the PC between movies.
                 Examples: 
                    {
                             "movie_1" : {
@@ -62,10 +65,7 @@ class DataWriter(object):
                     }
         
         """
-        with open("neighbors.json", 'w+') as data_file:
-            data_file.seek(0)    
-            json.dump(neighbors_dict, data_file)
-            data_file.close()
+        PC_matrix.to_json("k_neighbors.json")
                 
      
     def write_to_json_files (self,data_dict):
@@ -93,11 +93,13 @@ class DataWriter(object):
             json.dump(value, output_file)
             output_file.close()
             
-    def save_results(self, info):
-        with open("results.json","w") as reportFile:
-            reportFile.truncate()
-            json.dump(info, reportFile)
-            reportFile.close()
+    def save_results(self, results_df):
+        """Saves results to json file.
+        
+        Args:
+            results_df(pandas.DataFrame): The results table.
+        """    
+        results_df.to_json("results.json")        
 
 class DataReader(object):
     """Reads data in files.

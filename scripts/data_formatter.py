@@ -119,10 +119,10 @@ class DataFormatter(object):
         Returns:
             pandas.Dataframe: The formatted pandas.Dataframe.
         """
-        data = data.pivot(columns='user_id', index='movie_id', values='rating')        
+        data = data.pivot(index='user_id', columns='movie_id', values='rating')        
                 
         #Replace NaN for 0
-        data[np.isnan(data)] = 0
+        #data[np.isnan(data)] = 0
         #data = data.to_sparse()
         
         return data

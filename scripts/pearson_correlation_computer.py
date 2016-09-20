@@ -116,7 +116,7 @@ class PearsonCorrelationComputer(object):
     
     
    
-    def compute_pc(self, all_data = None, train_subset = None):
+    def compute_pc(self, all_data = None):
      
         """Calculates pearson correlation between movies and saves them to files.
         
@@ -127,13 +127,15 @@ class PearsonCorrelationComputer(object):
             train_subset (pandas.Dataframe)  : Subset of data to use when founding
                 PCs.
         """
-        time_neighbors = 0
+        time_neighbors = datetime.now()
                 
-        self.pearson_dict, time_neighbors  = self.__calculate_pearson_corr(all_data,train_subset)
+        
+        PC_matrix = all_data.corr()
             
-        #self.file_writer.save_neighbors_file(self.pearson_dict)
-        self.file_writer.update_items(self.pearson_dict)
+        time_neighbors = (datetime.now() - time_neighbors).total_seconds()
+        self.file_writer.save_neighbors_file(PC_matrix)
+        self.file_writer.update_items(PC_matrix)
         
         print "Time spent in neighbors calculations {}".format(time_neighbors)
-        return  self.pearson_dict, time_neighbors
+        return  PC_matrix, time_neighbors
         

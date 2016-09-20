@@ -1,5 +1,6 @@
 from data_io import DataReader
 import operator
+import pandas as pd
 from numpy.core.test_rational import denominator, numerator
 
 class NotEnoughInfoException(Exception):
@@ -50,8 +51,12 @@ class Predictor(object):
         Returns:
             dict: A dict with the ids of the K Neighbors with their PC as value.
         """
+        pcs_without_none = pd.DataFrame(columns=pcs_with_others.keys())
+        pcs_without_none = pcs_without_none.append(pcs_with_others,ignore_index=True)
+        pcs_without_none = pcs_without_none.fillna(-1)
+        pcs_without_none = pcs_without_none.to_dict('records')[0]
         
-        ordered_pcs = sorted(pcs_with_others.iteritems(), key=operator.itemgetter(1))
+        ordered_pcs = sorted(pcs_without_none.iteritems(), key=operator.itemgetter(1))
         
         k_neighbors = ordered_pcs[ self.k * -1 : -1]
         
@@ -85,11 +90,15 @@ class Predictor(object):
         numerator = 0
         denominator = 0
        
+        PC = None
         
         for movie in k_neighbors_rated_by_user:
             PC = k_neighbors[movie]
             user_rating = user_data['ratings'][movie]
-            numerator += PC * int(user_rating)
+            try:
+                numerator += PC * int(user_rating)
+            except Exception as err:
+                print err 
             denominator += abs(PC)
         
         try:
