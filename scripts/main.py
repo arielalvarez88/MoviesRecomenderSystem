@@ -2,8 +2,13 @@ from data_formatter import DataFormatter
 from data_analyst import DataAnalyst
 from data_io import DataReader
 from metrics_calc import MetricsCalc
+""" This module runs the whole process in order. 
+
+"""
+
 
 dataframe = DataReader().read_ratings_as_df()
+
 analyst = DataAnalyst()
 #analyst.provide_analysis()
 
@@ -14,7 +19,7 @@ metrics_calc = MetricsCalc()
 
 all_movies_count = len(dataframe['movie_id'].unique())
 
-results = metrics_calc.grid_search(dataframe, [all_movies_count],[0.8], [10,20,30,40,50,60])
-#results = metrics_calc.grid_search(dataframe, [0.0001,0.001,0.01],[0.2,0.4,0.6,0.8], [30])
+results = metrics_calc.grid_search(data=dataframe, ratings_in_subsets=[1000000], neighbors_counts=[6000],k_fold=3)
 
-analyst.graph_results(results)
+
+analyst.graph_results(results,all_movies_count)

@@ -134,7 +134,7 @@ class PearsonCorrelationComputer(object):
             
         time_neighbors = (datetime.now() - time_neighbors).total_seconds()
         self.file_writer.save_neighbors_file(PC_matrix)
-        self.file_writer.update_items(PC_matrix)
+        #self.file_writer.update_items(PC_matrix)
         
         print "Time spent in neighbors calculations {}".format(time_neighbors)
         return  PC_matrix, time_neighbors

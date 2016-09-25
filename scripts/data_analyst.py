@@ -7,7 +7,7 @@ class DataAnalyst(object):
     """Provides analytics of the data.
     """
     def __init__(self):
-        self.report_metrics = ['Train_percentage', 'Movies_count', 'K_neighbors' , 'MAE', 'PC_calc_time', 'Throughput', "Time_MAE"]
+        self.report_metrics = ['Ratings_in_subset', 'Movies_count', 'Neighbors_count' , 'MAE',  'Throughput']
 
     
     def provide_analysis(self, data_frame = None):
@@ -54,7 +54,7 @@ class DataAnalyst(object):
         
         plt.show()
         
-    def simple_graph(self, xlabel,ylabel, xdata, ydata, figure = None,label= '', line_format = 'b-'):
+    def simple_graph(self, xlabel,ylabel, xdata, ydata, figure = None,label= '', line_format = 'b-o'):
         """Utility function to plot in a figure.
         
         Args:
@@ -83,44 +83,42 @@ class DataAnalyst(object):
         
         
 
-    def compare_train_percentage(self, results):
+    def compare_ratings_in_subset(self, results):
         
         figure = None
 
-        #MAE vs Train_percentage
-        movies_subsets = results['Movies_count'].unique()
-        line_formats = ['r-','b-','k-','r-','g-']
+        #Ratings_in_subset vs MAE
+        movies_subsets = results['Ratings_in_subset'].unique()
+        line_formats = ['r-o','b-o','k-o','r-o','g-o']
         for i, movies_subset in enumerate(movies_subsets):
-            values_for_subset = results[results['Movies_count'] == movies_subset]
+            values_for_subset = results[results['Ratings_in_subset'] == movies_subset]
             line_label = '# of movies = {}'.format(movies_subset)
-            figure = self.simple_graph("Train_percentage", "MAE", values_for_subset['Train_percentage'], values_for_subset['MAE'], figure = figure, label=line_label, line_format =line_formats[i])
+            figure = self.simple_graph("Ratings_in_subset", "MAE", values_for_subset['Ratings_in_subset'], values_for_subset['MAE'], figure = figure, label=line_label, line_format =line_formats[i])
         
         plt.legend()            
         
-        figure.suptitle("Train_percentage vs MAE for different movies subsets")
+        figure.suptitle("Ratings_in_subset vs MAE for different movies subsets")
         plt.show()
         
-    def graph_results(self,results):
+    def graph_results(self,results,all_movies_count):
         
         """Generate graphs showing results
         Args:
             dict: The results containing the following values.
-        """                                                
+        """                             
+        
+        #Ratings in subset vs MAE                   
+        self.compare_ratings_in_subset(results) 
         
         #K vs MAE         
-        self.simple_graph("Number of Neighbors","MAE", results['K_neighbors'], results['MAE'])
+        self.simple_graph("Number of Neighbors","MAE", results['Neighbors_count'], results['MAE'])
                                 
         #Train-Percentage vs MAE 
-        self.simple_graph("Train_percentage","MAE", results['Train_percentage'], results['MAE'])
+        self.simple_graph("Ratings_in_subset","MAE", results['Ratings_in_subset'], results['MAE'])
         
         #K vs Throughput 
-        self.simple_graph("Number of Neighbors","Throughput", results['K_neighbors'], results['Throughput'])
-        
-        #Train-Precentage vs PC_calc_time
-        self.simple_graph("Train_percentage","PC_calc_time", results['Train_percentage'], results['PC_calc_time'])
-        
-        #Train_percentage vs Time_MAE 
-        self.simple_graph("Train_percentage","Time_MAE", results['Train_percentage'], results['Time_MAE'])
+        self.simple_graph("Number of Neighbors","Throughput", results['Neighbors_count'], results['Throughput'])
+                                
          
          
 

@@ -6,7 +6,9 @@ user_cache = {}
 movie_cache = {}
      
 class DataWriter(object):
-    
+    """Writes data to the hard disk.
+        
+    """
     def __init__(self):
         self.config = Config()
      
@@ -115,7 +117,11 @@ class DataReader(object):
         Returns:
             pandas.DataFrame: Data from the original movies.dat file
         """
-        return pd.read_table(self.config.ratings_file_path, sep='::', skiprows=0, header=None, names=['user_id', 'movie_id', 'rating', 'timestamp'], converters = {'rating': np.int8} )
+        data =  pd.read_table(self.config.ratings_file_path, sep='::', skiprows=0, header=None, names=['user_id', 'movie_id', 'rating', 'timestamp'], converters = {'rating': np.int8} )
+        
+        data['rating'] =  data['rating'].values.astype(np.int8)
+        
+        return data
     
     def get_movie_data(self, movie_id, avoid_cache = False):
         """Return data of movie accessing directly to the file.

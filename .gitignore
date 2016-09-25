@@ -5,3 +5,5 @@
 ./scripts/k_neighbors_bk.json
 ./scripts/*.pyc
 ./scripts/tests.py
+./scipts/.project
+./scipts/.pydevproject
