@@ -32,14 +32,13 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
     """
     def __init__(self, neighbors_count=5, df_log=None):        
         self.neighbors_count = neighbors_count            
-        self.reader = DataReader()
-        self.neighbors_count = 20
+        self.reader = DataReader()        
         self.X=None
         self.y=None
         self.pivoted_data=None
         self.df_log = None
         self.pc_computer = PearsonCorrelationComputer()
-        
+        self.correlation_mtx = None
 
     def fit(self, X, y):
         self.X = X
@@ -86,7 +85,9 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
             correlation_mtx_k.loc[dict(neighbors_to_eliminate).keys(), column] = 0 
                     
         time_predicting = datetime.now() 
-        predictions = to_predict_pivot.dot(correlation_mtx_k) / (to_predict_pivot).dot(correlation_mtx_k)
+        np.fill_diagonal(correlation_mtx_k.values, 0)
+
+        predictions = to_predict_pivot.dot(correlation_mtx_k) / (to_predict_pivot != 0).dot(correlation_mtx_k.abs())
         time_predicting = (datetime.now() - time_predicting).total_seconds()
         
         try:
@@ -104,7 +105,8 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
             user_id = row[0]
             movie_id = row[1]
             results.append(predictions.loc[user_id, movie_id] )    
-            
+        if(len(results) == 0):
+            print ('kaboom')
         return results
     
     def suggest(self, user_id, number_of_suggestions = 1):
@@ -202,12 +204,11 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
         return set(movies_rated_by_user).intersection(set(k_neighbors))
     
     def score(self, X, y):
-        predictions = self.predict(X)
-        predictions = np.nan_to_num(predictions)
-        print("Debug:  Size y ={}, Size prediction={}, y ={} , prediction = {}".format(y.shape, predictions.shape, y, predictions))
-        if(y.shape != predictions.shape):
-            print("kaboom")
-        return sklearn.metrics.mean_squared_error(y,predictions)
+        predictions = self.predict(X)        
+        if(len(y) == 0):
+            return 0    
+        MAE = np.sum(np.abs(predictions - y))/y.shape[0]
+        return MAE
         
     def get_k(self):
         return self.__k

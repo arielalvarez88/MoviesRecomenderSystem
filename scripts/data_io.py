@@ -1,7 +1,12 @@
+import errno
 import json
+import os
+
 from config import Config
-import pandas as pd
 import numpy as np
+import pandas as pd
+
+
 user_cache = {}
 movie_cache = {}
      
@@ -9,10 +14,19 @@ class DataWriter(object):
     """Writes data to the hard disk.
         
     """
+    
+    
     def __init__(self):
         self.config = Config()
      
-            
+    
+    def create_path(self, file_path):
+        if not os.path.exists(os.path.dirname(file_path)):
+            try:
+                os.makedirs(os.path.dirname(file_path))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise        
     
     def update_items(self,PC_matrix):
         """Update k_neighbors property in movie's fast access json files.
@@ -101,7 +115,17 @@ class DataWriter(object):
         Args:
             results_df(pandas.DataFrame): The results table.
         """    
-        results_df.to_json("results.json")        
+        results_df.to_json("results.json")  
+        
+    def save_df(self,df,file_name):
+        """Saves results to json file.
+        
+        Args:
+            results_df(pandas.DataFrame): The results table.
+            
+            file_name (str): Name of file
+        """    
+        df.to_json(file_name + '.json')      
 
 class DataReader(object):
     """Reads data in files.
