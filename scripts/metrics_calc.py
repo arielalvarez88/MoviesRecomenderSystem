@@ -110,14 +110,16 @@ class MetricsCalc(object):
                 self.writer.save_df(estimator_grid.best_estimator_.pivoted_data, pivoted_data_file)
                 self.writer.save_df(test, test_file)
                 
-                throughput = datetime.now()
+                
                 
                 test_set_to_predict = test.loc[:,['user_id','movie_id']]
                 
+                throughput = datetime.now()
                     
                 MAE =  estimator_grid.best_estimator_.score(test_set_to_predict, test['rating']) 
                                             
                 throughput = (datetime.now() - throughput).total_seconds()
+                
                 throughput = throughput/test.shape[0] 
                                                     
                 cv_results = self.get_cv_logs(throughput = throughput, ratings_in_subset = ratings_in_subset,  test_set_percentage = test_set_percentage, k_fold= k_fold, grid_search_cv= estimator_grid)
@@ -172,7 +174,7 @@ class MetricsCalc(object):
             
             results = dict(params)
             results['Neighbors_count'] = params['neighbors_count']
-            results['MAE'] = mean_MAE
+            results['MAE'] = -mean_MAE
             results['K_fold'] = k_fold
             results['Ratings_in_subset']=ratings_in_subset
             results['Test_set_percentage']= test_set_percentage

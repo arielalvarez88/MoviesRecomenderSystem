@@ -64,15 +64,21 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
             matrix will a matrix with Movies in the columns and Users in the Rows
             and each value represents the numerator of the rating forumla the 
             predicted ratings between that user and that movie
-        """
+        """                
         
         time_mae = datetime.now()
         all_movies = set(to_predict['movie_id'].values).union(self.pivoted_data.columns.values)
+        all_movies = pd.Series(list(all_movies))
+        movies_to_predict_idxs = all_movies.isin( to_predict['movie_id'] )
+        
         users_to_predict = list(set(to_predict['user_id'].values))
         to_predict_pivot = self.pivoted_data.reindex(index= users_to_predict,columns = all_movies) 
-        correlation_mtx_k = self.correlation_mtx.reindex(index= all_movies , columns= all_movies)
+        correlation_mtx_k = self.correlation_mtx.reindex(index= all_movies , columns= all_movies[movies_to_predict_idxs])
         
-        ratings_positions = to_predict_pivot != 0
+        #Make 0 the correlation between an item with himself so it doesnt count in the predictions. 
+        correlation_mtx_k.loc[all_movies[movies_to_predict_idxs], all_movies[movies_to_predict_idxs]] = 0
+        
+        
          
         to_predict_pivot.iloc[:,:] = np.nan_to_num(to_predict_pivot) 
         correlation_mtx_k.iloc[:,:] = np.nan_to_num(correlation_mtx_k)
@@ -81,22 +87,15 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
             data = correlation_mtx_k.loc[:, column].to_dict()
            
             sorted_data = sorted(data.iteritems(), key=operator.itemgetter(1))
-            neighbors_to_eliminate = sorted_data[0 : len(sorted_data) - self.neighbors_count]
+            last_index = -self.neighbors_count if self.neighbors_count <= len(sorted_data) else -len(sorted_data) 
+            neighbors_to_eliminate = sorted_data[0 : last_index]
             correlation_mtx_k.loc[dict(neighbors_to_eliminate).keys(), column] = 0 
                     
-        time_predicting = datetime.now() 
-        np.fill_diagonal(correlation_mtx_k.values, 0)
+        time_predicting = datetime.now()         
 
         predictions = to_predict_pivot.dot(correlation_mtx_k) / (to_predict_pivot != 0).dot(correlation_mtx_k.abs())
         time_predicting = (datetime.now() - time_predicting).total_seconds()
-        
-        try:
-            throughput = ratings_positions.sum().sum() / (time_predicting )
-        except ZeroDivisionError:
-            throughput = sys.maxint
-     
-        key = self.get_params()['neighbors_count']
-                  
+                        
 
         predictions = predictions.reindex(index=list(set(to_predict['user_id'])), columns = list(set(to_predict['movie_id'])) )
 
@@ -164,34 +163,27 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
         Raise:
             NotEnoughInfoException: When user doesn't have any rating on the k neighbors of movie.
         """
-        movie_data = self.reader.get_movie_data(movie_id)
-        user_data = self.reader.get_user_data(user_id)
-        k_neighbors = self.get_k_neighbors(movie_data['k_neighbors'])
-        
-        k_neighbors_rated_by_user = self.__k_neighbors_rated_by_user(user_data['ratings'].keys(), k_neighbors.keys() )
-        
-        if(len(k_neighbors_rated_by_user) == 0):
-            raise NotEnoughInfoException()
-        numerator = 0
-        denominator = 0
-       
-        PC = None
-        
-        for movie in k_neighbors_rated_by_user:
-            PC = k_neighbors[movie]
-            user_rating = user_data['ratings'][movie]
-            try:
-                numerator += PC * int(user_rating)
-            except Exception as err:
-                print err 
-            denominator += abs(PC)
+    
+        user_data = None
+        movies_to_predict_data = None 
+        try:
+            user_data = pd.DataFrame(index=[user_id], columns=self.pivoted_data.columns, data=self.pivoted_data.loc[ user_id,:])
+            
+        except KeyError:
+            user_data = pd.DataFrame(index=[user_id], columns=self.pivoted_data.columns, data=np.zeros((1,len(self.pivoted_data.columns) )))            
         
         try:
-            return numerator/denominator
-        except ZeroDivisionError:
-            return 0
+            movies_to_predict_data = pd.DataFrame(index=self.correlation_mtx.index, columns=[movie_id], data=self.correlation_mtx.loc[:, movie_id])
+        except KeyError:
+            movies_to_predict_data = pd.DataFrame(index=self.correlation_mtx.index, columns=[movie_id], data=np.zeros(( len(self.correlation_mtx.index) ,1    )))
         
-    
+        try:
+            predictions = user_data.dot(movies_to_predict_data) / (user_data != 0).dot(movies_to_predict_data.abs())
+        except ZeroDivisionError:
+            return np.nan
+         
+        return predictions.loc[user_id, movie_id]
+        
     
     def __k_neighbors_rated_by_user(self, movies_rated_by_user, k_neighbors):
         """Get the k_neighbors that user has rated.
@@ -204,11 +196,31 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
         return set(movies_rated_by_user).intersection(set(k_neighbors))
     
     def score(self, X, y):
-        predictions = self.predict(X)        
+        """Returns the MAE.
+        
+        It will return the MAE for the predictions of X in negative. This is because
+        sklearn considers a bigger value as a better value.
+        
+        Args:
+            
+            X(pd.DataFrame) : The input data. It has two columns : 'user_id' and
+                'movie_id'
+                
+            y(pd.DataFrame): The real ratings for the values in X. It has 1
+                columns: 'rating'
+        Returns:
+        
+            float: The MAE of the predictions of X.
+        """                
         if(len(y) == 0):
-            return 0    
-        MAE = np.sum(np.abs(predictions - y))/y.shape[0]
-        return MAE
+            return np.nan
+        
+        predictions = self.predict(X)
+        predictions = np.nan_to_num(predictions)         
+        MAE = sklearn.metrics.mean_absolute_error(y,predictions)
+        
+        #I return the negative value of the MAE since sklearn considers a bigger value as a better value.
+        return -MAE
         
     def get_k(self):
         return self.__k

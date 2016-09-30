@@ -54,7 +54,7 @@ class DataAnalyst(object):
         
         plt.show()
         
-    def simple_graph(self, xlabel,ylabel, xdata, ydata, figure = None,label= '', line_format = 'b-o'):
+    def simple_graph(self, xlabel,ylabel, xdata, ydata, figure = None,label= '', line_format = 'b-o', legend_loc = 'upper right'):
         """Utility function to plot a figure.
         
         Args:
@@ -88,7 +88,8 @@ class DataAnalyst(object):
         plt.xlabel( xlabel, size=34, weight='bold')
         plt.ylabel( ylabel, size=34, weight='bold')
                 
-        plt.plot(xdata,ydata,line_format,figure=fig, label=label)        
+        plt.plot(xdata,ydata,line_format,figure=fig, label=label)
+                
         return fig
         
         
@@ -105,19 +106,19 @@ class DataAnalyst(object):
 
         #Ratings_in_subset vs MAE
         ratings_subsets = results['Ratings_in_subset'].unique()
-        line_formats = ['r-o','b-o','k-o','r-o','g-o']
+        line_formats = ['r-o','b-o','k-o','r-o','g-o','c-o', 'm-o', 'r-o','b-o','k-o','r-o','g-o','c-o', 'm-o']
         for i, ratings_subset in enumerate(ratings_subsets):
             values_for_subset = results[results['Ratings_in_subset'] == ratings_subset]
             line_label = '# of ratings = {}'.format(ratings_subset)
             figure = self.simple_graph("Test_set_percentage", "MAE", values_for_subset['Test_set_percentage'], values_for_subset['MAE'], figure = figure, label=line_label, line_format =line_formats[i])
         
-        plt.legend()            
+        plt.legend(loc= 'lower left')            
         
         if(figure is not None):            
             figure.suptitle("Test_set_percentage vs MAE for different ratings subsets")
         plt.show()
         
-    def multiple_lines_plot(self, results, xlabel, ylabel, x_data_field = None, y_data_field = None, group_by_field=None, figure_title='', line_legend_tpl= 'line for {}', figure = None,label= '', line_format = 'b-o' ):
+    def multiple_lines_plot(self, results, xlabel, ylabel, x_data_field = None, y_data_field = None, group_by_field=None, figure_title='', line_legend_tpl= 'line for {}', figure = None,label= '', line_format = 'b-o', legend_loc = 'upper right'):
         """ Visualize the test percentages vs MAE for each subset of the data.
         
         Args :
@@ -128,13 +129,13 @@ class DataAnalyst(object):
         figure = None
     
         group_by_values = results[group_by_field].unique()
-        line_formats = ['r-o','b-o','k-o','r-o','g-o']
+        line_formats = ['r-o','b-o','k-o','r-o','g-o','c-o', 'm-o', 'r-o','b-o','k-o','r-o','g-o','c-o', 'm-o']
         for i, group_by_value in enumerate(group_by_values):
             values_for_group = results[results[group_by_field] == group_by_value]
             line_label = line_legend_tpl.format(group_by_value)
-            figure = self.simple_graph(xlabel, ylabel, values_for_group[x_data_field], values_for_group[y_data_field], figure = figure, label=line_label, line_format =line_formats[i])
+            figure = self.simple_graph(xlabel, ylabel, values_for_group[x_data_field], values_for_group[y_data_field], figure = figure, label=line_label, line_format =line_formats[i], legend_loc = legend_loc)
         
-        plt.legend()            
+        plt.legend(loc=legend_loc, prop={'size': 20})            
         
         if(figure is not None):
             figure.suptitle(figure_title)
@@ -151,13 +152,14 @@ class DataAnalyst(object):
         """                             
           
         #Test_set_percentange vs MAE
-        self.splits_vs_mae(test_result)                                                       
+        #self.splits_vs_mae(test_result)                
+        self.multiple_lines_plot(test_result, "Test_set_percentage", "MAE", "Test_set_percentage", "MAE", group_by_field="Ratings_in_subset", line_legend_tpl = "Ratings in subset: {}", figure_title= 'Test_percentage vs MAE at each test/train split', legend_loc = 'upper right')                                                       
                                 
-        #Ratings_in_subset vs MAE
-        self.simple_graph("Ratings_in_subset","MAE", test_result['Ratings_in_subset'], test_result['MAE'])
+        #Ratings_in_subset vs MAE        
+        self.multiple_lines_plot(test_result, "Ratings_in_subset", "MAE", "Ratings_in_subset", "MAE", group_by_field="Test_set_percentage", line_legend_tpl = "Test set percentage: {}", figure_title= 'Ratings_in_subset vs MAE at each test/train split', legend_loc = 'lower right')
         
         #Ratings_in_subset vs Throughput at test_set_percentage
-        self.multiple_lines_plot(test_result, "Ratings_in_subset","Throughput", 'Ratings_in_subset', 'Throughput', group_by_field='Test_set_percentage', line_legend_tpl = "Test set percentage: {}", figure_title= 'Ratings_in_subset vs Throughput at each test/train split')
+        self.multiple_lines_plot(test_result, "Ratings_in_subset","Throughput", 'Ratings_in_subset', 'Throughput', group_by_field='Test_set_percentage', line_legend_tpl = "Test set percentage: {}", figure_title= 'Ratings_in_subset vs Throughput at each test/train split', legend_loc = 'lower right')
         
         
                                         
