@@ -46,6 +46,7 @@ class DataAnalyst(object):
         matplotlib.rc('font', **font)
         
         sub_plot = plt.subplot()
+        sub_plot.set_title('Ratings data distribution')
         sub_plot.bar(X, Y, align='center')
         sub_plot.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))) 
         

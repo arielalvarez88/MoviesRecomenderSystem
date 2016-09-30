@@ -79,7 +79,7 @@ class MetricsCalc(object):
                 
                 throughput = datetime.now()
                     
-                MAE =  estimator_grid.best_estimator_.score(test_set_to_predict, test['rating']) 
+                MAE =  -estimator_grid.best_estimator_.score(test_set_to_predict, test['rating']) 
                                             
                 throughput = (datetime.now() - throughput).total_seconds()
                 
