@@ -1,22 +1,10 @@
 from datetime import datetime
-
-import operator
-import random
-
-import pandas
-import sklearn
-from sklearn.cross_validation import train_test_split
+import sklearn.cross_validation
 from sklearn.grid_search import GridSearchCV
-import sklearn.metrics
-from sklearn.metrics.regression import mean_absolute_error
-
-from data_formatter import DataFormatter
 from data_io import DataReader, DataWriter
-from estimator import RatingsEstimator, NotEnoughInfoException
-from log import EstimatorLogger
-import numpy as np
+from estimator import RatingsEstimator
 import pandas as pd
-from pearson_correlation_computer import PearsonCorrelationComputer
+
 
 
 class MetricsCalc(object):

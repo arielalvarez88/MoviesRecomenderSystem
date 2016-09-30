@@ -11,7 +11,8 @@ class DataAnalyst(object):
 
     
     def provide_analysis(self, data_frame = None):
-        """Provides visualization of the data's distribution and other statistic info.
+        """Provides visualization of the data's distribution and other statistic
+             info.
         
         Args:
             data_frame (pandas.DataFrame): Original data.
@@ -54,8 +55,8 @@ class DataAnalyst(object):
         
         plt.show()
         
-    def simple_graph(self, xlabel,ylabel, xdata, ydata, figure = None,label= '', line_format = 'b-o', legend_loc = 'upper right'):
-        """Utility function to plot a figure.
+    def simple_graph(self, xlabel,ylabel, xdata, ydata, figure = None, label= '', line_format = 'b-o', legend_loc = 'upper right'):
+        """Utility function to plot a line.
         
         Args:
             
@@ -66,6 +67,7 @@ class DataAnalyst(object):
             xdata (list) : Data for X axis.
             
             ydata (list) : Data for Y axis.
+            
             figure (matplotlib.figure.Figure): The figure where to plot. A new one is
                 created if is None.
                 
@@ -73,7 +75,11 @@ class DataAnalyst(object):
             
             line_format (string): String with line format and color code a la
                 matplotlib.
+                
+            legend_loc (string): Location of the legend.
+            
         Return:
+        
             matplotlib.figure.Figure: The figure where the plot was done.
         """
         
@@ -92,38 +98,38 @@ class DataAnalyst(object):
                 
         return fig
         
+                
+    def multiple_lines_plot(self, results, xlabel, ylabel, x_data_field = None, y_data_field = None, group_by_field=None, figure_title='', line_legend_tpl= 'line for {}', figure = None, line_format = 'b-o', legend_loc = 'upper right'):
+        """ Utility function to plot multiple lines in the same axes.
         
-
-    def splits_vs_mae(self, results):
-        """ Visualize the test percentages vs MAE for each subset of the data.
-        
-        Args :
+        Args:
             
-            results (pandas.DataFrame): A DataFrame with the measurements.
+            xlabel (string) : Label in X axis.
             
-        """
-        figure = None
-
-        #Ratings_in_subset vs MAE
-        ratings_subsets = results['Ratings_in_subset'].unique()
-        line_formats = ['r-o','b-o','k-o','r-o','g-o','c-o', 'm-o', 'r-o','b-o','k-o','r-o','g-o','c-o', 'm-o']
-        for i, ratings_subset in enumerate(ratings_subsets):
-            values_for_subset = results[results['Ratings_in_subset'] == ratings_subset]
-            line_label = '# of ratings = {}'.format(ratings_subset)
-            figure = self.simple_graph("Test_set_percentage", "MAE", values_for_subset['Test_set_percentage'], values_for_subset['MAE'], figure = figure, label=line_label, line_format =line_formats[i])
-        
-        plt.legend(loc= 'lower left')            
-        
-        if(figure is not None):            
-            figure.suptitle("Test_set_percentage vs MAE for different ratings subsets")
-        plt.show()
-        
-    def multiple_lines_plot(self, results, xlabel, ylabel, x_data_field = None, y_data_field = None, group_by_field=None, figure_title='', line_legend_tpl= 'line for {}', figure = None,label= '', line_format = 'b-o', legend_loc = 'upper right'):
-        """ Visualize the test percentages vs MAE for each subset of the data.
-        
-        Args :
+            ylabel (string) : Label in Y axis.
             
-            results (pandas.DataFrame): A DataFrame with the measurements.
+            x_data_field (str) : Name of the pandas.DataFrame column to use as X in
+                plot.
+            
+            y_data_field (st) : Name of the pandas.DataFrame column to use as Y in
+                plot.
+            
+            group_by_field (str): Name of the pandas.DataFrame column to group
+                by in order to get the different groups that will represent each
+                line.   
+                         
+            figure_title (str): Title in the figure.
+            
+            figure (matplotlib.figure.Figure): The figure where to plot. A new one is
+                created if is None.
+    
+            line_legend_tpl (str) = Template string for the legend. {} will get
+                replaced by the value in group_by_field argument.                                
+            
+            line_format (string): String with line format and color code a la
+                matplotlib.
+                
+            legend_loc (string): Location of the legend.
             
         """
         figure = None
@@ -143,16 +149,25 @@ class DataAnalyst(object):
         
     def graph_size_sensitivities(self,cv_results, test_result):
         
-        """Generate graphs showing results.
+        """Generate graphs showing results of first run.
+        
+        First run consist in running with a fixed Neighbors_count value
+        to see how the MAE and throughput behaves when changing the test set
+        percentage and model size.
         
         Args:
-            results(pandas.DataFrame): A DataFrame with the columns :'Ratings_in_subset', 
+        
+            cv_results(pandas.DataFrame): A DataFrame with the columns :'Ratings_in_subset', 
                 'Neighbors_count' , 'MAE',  'Throughput'. It has the value of 
-                the measurements.
+                the measurements. It has the training errors and other metrics.
+            
+            test_result(pandas.DataFrame): A DataFrame with the columns :'Ratings_in_subset', 
+                'Neighbors_count' , 'MAE',  'Throughput'. It has the value of 
+                the measurements. It has the test errors and other metrics.   
+                
         """                             
           
-        #Test_set_percentange vs MAE
-        #self.splits_vs_mae(test_result)                
+        #Test_set_percentange vs MAE                    
         self.multiple_lines_plot(test_result, "Test_set_percentage", "MAE", "Test_set_percentage", "MAE", group_by_field="Ratings_in_subset", line_legend_tpl = "Ratings in subset: {}", figure_title= 'Test_percentage vs MAE at each test/train split', legend_loc = 'upper right')                                                       
                                 
         #Ratings_in_subset vs MAE        
@@ -167,6 +182,17 @@ class DataAnalyst(object):
         plt.show()
         
     def graph_neighbors_sensitivity(self, cv_results):
+        """Generate graphs showing results of the second run.
         
-        #Neighbors_count vs MAE         
-        self.simple_graph("Number of Neighbors","MAE", cv_results['Neighbors_count'], cv_results['MAE'])
+        Second run consist in running with multiple values of Neighbors_count 
+        to see how the MAE and throughput behaves while keeping the test set percentage 
+        and model size fixed.
+        
+        Args:
+            cv_results(pandas.DataFrame): A DataFrame with the columns :'Ratings_in_subset', 
+                'Neighbors_count' , 'MAE',  'Throughput'. It has the value of 
+                the measurements.
+        """                             
+                 
+        #Neighbors_count vs MAE
+        self.simple_graph(xlabel="Neighbors_count", ylabel="MAE", xdata=cv_results['Neighbors_count'], ydata=cv_results['Neighbors_count'], label="Neighbors_count vs MAE")

@@ -40,4 +40,4 @@ def train_model(best_split):
                 
 
 best_split = determine_best_split()
-train_model(0.3)
+#train_model(0.3)

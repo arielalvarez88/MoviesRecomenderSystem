@@ -1,8 +1,3 @@
-import copy
-from config import Config
-from data_io import DataReader
-import numpy as np
-
 class DataFormatter(object):
     """Helper for pivoting data.
     """
