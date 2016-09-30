@@ -1,46 +1,56 @@
 from datetime import datetime
 import operator
-import sys
-
-from numpy.core.test_rational import denominator, numerator
-import sklearn
 from sklearn.base import BaseEstimator, ClassifierMixin
 import sklearn.metrics
 
 from data_formatter import DataFormatter
-from data_io import DataReader
-import datastructures
-from log import EstimatorLogger
 import numpy as np
 import pandas as pd
 from pearson_correlation_computer import PearsonCorrelationComputer
-from datastructures import OrderedSet
 
-
-class NotEnoughInfoException(Exception):
-    def __init___(self, dErrorArguments):
-        Exception.__init__(self,"There is no information to predict the movie. The user has to have ratings for at least 1 of the k neighbors.")
-        self.dErrorArguments = dErrorArguments
 
 class RatingsEstimator(BaseEstimator, ClassifierMixin):
-    """Class to recommend and predict movie ratings for users.
+    """Class to  predict movie ratings for users.
     
     Attributes:
-        __k (int) : The number of neighbors to take into account for predicitons
-            and suggestions.
-                
+    
+        neighbors_count (int) : The number of neighbors to take into account for 
+            predicitons.
+            
+        X (pandas.DataFrame): The input training data. It has two columns:
+            'user_id' and 'movie_id' 
+        
+        y (pandas.DataFrame): The output for the training data.
+        
+        pivoted_data (pandas.DataFrame): The training data in X and y is pivoted
+            in a matrix where you map the user_id (in the rows) to the movie_id
+            in the columns.
+            
+        pc_computer (pearson_correlation_computer.PearsonCorrelationComputer):
+            A class that calculates the correlation matrix.
+            
+        correlation_mtx (pandas.DataFrame): The correlation matrix. It has the
+            Pearson Correlation coeficient for each movie pair. Each row
+            represents a movie and each column represents another movie.
     """
-    def __init__(self, neighbors_count=5, df_log=None):        
-        self.neighbors_count = neighbors_count            
-        self.reader = DataReader()        
+    def __init__(self, neighbors_count=5):        
+        self.neighbors_count = neighbors_count                        
         self.X=None
         self.y=None
-        self.pivoted_data=None
-        self.df_log = None
+        self.pivoted_data=None        
         self.pc_computer = PearsonCorrelationComputer()
         self.correlation_mtx = None
 
     def fit(self, X, y):
+        """ Method call to train the model.
+        
+        Args:
+            X (pandas.DataFrame): The input training data. It has two columns:
+            'user_id' and 'movie_id' 
+        
+            y (pandas.DataFrame): The output for the training data.
+        
+        """
         self.X = X
         self.y = y
         self.all_data = X.copy()
@@ -52,21 +62,15 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, to_predict):       
-        """Predicts values.
+        """Method to predicts the ratings.
                 
         Args:
             
-            X (pandas.Dataframe): Data to predict.            
-        
-        I want a matrix of Movies x Movies dimention with the PC values, but PC =0 i
-            f the its not a K neighbor. The K neighbors for Movie i will be in 
-            the Vertical Axis. The product of my #Users x #Movies matrix with that   
-            matrix will a matrix with Movies in the columns and Users in the Rows
-            and each value represents the numerator of the rating forumla the 
-            predicted ratings between that user and that movie
+            X (pandas.Dataframe): Data to predict. It has two columns:
+            'user_id' and 'movie_id'.            
+                
         """                
-        
-        time_mae = datetime.now()
+                
         all_movies = set(to_predict['movie_id'].values).union(self.pivoted_data.columns.values)
         all_movies = pd.Series(list(all_movies))
         movies_to_predict_idxs = all_movies.isin( to_predict['movie_id'] )
@@ -108,98 +112,13 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
             print ('kaboom')
         return results
     
-    def suggest(self, user_id, number_of_suggestions = 1):
-        """Returns a list of movies ids that the user might like. 
-        
-        It suggests movies to the specified user by going in to his top rated
-        items and getting their K neighbors.
-        
-        """
-    
-    def get_k_neighbors(self, pcs_with_others):
-        """Returns the k biggest Pearson Correlations, there for the k neighbors.
-        
-        Args:
-        
-            pcs_with_others (dict): The Pearson Correlation between the movie
-                of which you want the k neighbors and all the other movies. It
-                has the movie_ids as keys and the PC as values
-            
-                Examples: 
-                    {
-                        "movie_id2" : -0.3,
-                        "movie_id3" : 0.89
-                
-                    }
-                    
-        Returns:
-            dict: A dict with the ids of the K Neighbors with their PC as value.
-        """
-        pcs_without_none = pd.DataFrame(columns=pcs_with_others.keys())
-        pcs_without_none = pcs_without_none.append(pcs_with_others,ignore_index=True)
-        pcs_without_none = pcs_without_none.fillna(-1)
-        pcs_without_none = pcs_without_none.to_dict('records')[0]
-        
-        ordered_pcs = sorted(pcs_without_none.iteritems(), key=operator.itemgetter(1))
-        
-        k_neighbors = ordered_pcs[ self.k * -1 : -1]
-        
-        return dict(k_neighbors)
-        
-    def predict_single(self, user_id, movie_id):
-        """ Predicts rating the user will give to the movie.
-            
-            This method receives an user_id and returns the predicted rating 
-            for the specified movie. 
-        Args:
-        
-            user_id (str) : The id of the user for which you want to predict the 
-                rating on the movie.
-                
-            movie_id(str) : The id of the movie on which the prediction will be made.
-            
-        Returns:
-            float: The predicted rating
-        Raise:
-            NotEnoughInfoException: When user doesn't have any rating on the k neighbors of movie.
-        """
-    
-        user_data = None
-        movies_to_predict_data = None 
-        try:
-            user_data = pd.DataFrame(index=[user_id], columns=self.pivoted_data.columns, data=self.pivoted_data.loc[ user_id,:])
-            
-        except KeyError:
-            user_data = pd.DataFrame(index=[user_id], columns=self.pivoted_data.columns, data=np.zeros((1,len(self.pivoted_data.columns) )))            
-        
-        try:
-            movies_to_predict_data = pd.DataFrame(index=self.correlation_mtx.index, columns=[movie_id], data=self.correlation_mtx.loc[:, movie_id])
-        except KeyError:
-            movies_to_predict_data = pd.DataFrame(index=self.correlation_mtx.index, columns=[movie_id], data=np.zeros(( len(self.correlation_mtx.index) ,1    )))
-        
-        try:
-            predictions = user_data.dot(movies_to_predict_data) / (user_data != 0).dot(movies_to_predict_data.abs())
-        except ZeroDivisionError:
-            return np.nan
-         
-        return predictions.loc[user_id, movie_id]
-        
-    
-    def __k_neighbors_rated_by_user(self, movies_rated_by_user, k_neighbors):
-        """Get the k_neighbors that user has rated.
-                
-        Returns:
-            set: Set with the movies ids of the k_neighbors rated by user
-            
-        """
-   
-        return set(movies_rated_by_user).intersection(set(k_neighbors))
-    
+     
     def score(self, X, y):
         """Returns the MAE.
         
-        It will return the MAE for the predictions of X in negative. This is because
-        sklearn considers a bigger value as a better value.
+        It will return the MAE for the predictions of X comparing it to y which
+        the ral values. The MAE is returned in negative  because
+        considers a bigger value as a better value.
         
         Args:
             
@@ -208,6 +127,7 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
                 
             y(pd.DataFrame): The real ratings for the values in X. It has 1
                 columns: 'rating'
+                
         Returns:
         
             float: The MAE of the predictions of X.
@@ -221,17 +141,3 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
         
         #I return the negative value of the MAE since sklearn considers a bigger value as a better value.
         return -MAE
-        
-    def get_k(self):
-        return self.__k
-
-
-    def set_k(self, value):
-        self.__k = value
-
-
-    def del_k(self):
-        del self.__k
-
-    k = property(get_k, set_k, del_k, "k's docstring")
- 

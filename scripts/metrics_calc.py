@@ -27,56 +27,31 @@ class MetricsCalc(object):
         self.test_set_results = pd.DataFrame(columns=self.report_columns)
         self.reader = DataReader()
         self.writer = DataWriter()
-       
-    @staticmethod
-    def train_test_split(ori_data, pivoted_data, test_set_percentage=0.2):
-    
-        test_ratings = ori_data.sample(frac=test_set_percentage)
-        ratings_in_test_set = test_ratings.shape[0]
-        
-        test_set = np.zeros(pivoted_data.shape)
-        test_set = pandas.DataFrame(columns=pivoted_data.columns, index=pivoted_data.index, data=test_set)            
-        train_set = pivoted_data        
-        
-        user_movie_rating = test_ratings[['user_id', 'movie_id', 'rating']].values
-        
-        subsets_size_to_update = 1000
-        start = 0
-        
-        while (start < ratings_in_test_set):
-            stop = start + subsets_size_to_update
-            slice = test_ratings.iloc[start:stop , :]
-            test_set.loc[slice['user_id'] , slice['movie_id']] = slice['rating']
-            train_set.loc[slice['user_id'] , slice['movie_id']] = 0
-            
-            start += subsets_size_to_update
-                                
-        return train_set, test_set, ori_data.drop(test_ratings.index,axis=0)
-            
-        
-    def grid_search(self, data=None, ratings_in_subsets=None, test_set_percentages = None, neighbors_counts=None, k_fold=3):
-        """Gives a report of MAE and Throughput and PC calculation time.
-       
-        Does a grid search for the K, and percentages and reports back MAE, 
-        Throughput and PC calculation time for each of the param values.
-        
+   
+    def train_with_cv(self, data=None, ratings_in_subsets=None, test_set_percentages = None, neighbors_counts=None, k_fold=3):
+        """Performs the training with all parameters and returns the results.
+               
         Args:
         
             data (pandas.DataFrame): Data in the original format.
             
-            ratings_in_subsets (list): A list of absolute movie counts that 
+            ratings_in_subsets (list): A list of absolute ratings counts that 
                 are going to be used to calculate metrics.
             
-            train_percentages (list): The percentage of movies to use when 
-                calculating the Pearson Corrlation between movies.
+            train_percentages (list): The percentage of ratings to user as train 
+                sets.
                 
             neighbors_counts (list): Numbers of K neighbors to use when predicting.
+            
+            k_fold (int): Numbers of folds to use in K-fold cross validation.
         
         Returns:
-            dict : A dict with the values of all metrics for each
-                train_percentages and K_neighbor combination.
         
-        
+            pandas.DataFrame : A table with the results of the metrics. The MAE
+                is performed with the training set (training error). 
+            
+            pandas.DataFrame : A table with the results of the metrics. The MAE
+                is performed with the test set (testing error). 
             
        """ 
         
