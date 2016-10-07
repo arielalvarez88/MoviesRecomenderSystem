@@ -51,7 +51,7 @@ class MetricsCalc(object):
             data = all_data.sample(n=ratings_in_subset)
 
             for test_set_percentage in test_set_percentages:                
-                train, test = sklearn.cross_validation.train_test_split(data, test_size=test_set_percentage)
+                train, test = sklearn.cross_validation.train_test_split(data, test_size=test_set_percentage, random_state=1)
                 X = train.loc[:,['user_id','movie_id']]             
                 y = train['rating']
        
