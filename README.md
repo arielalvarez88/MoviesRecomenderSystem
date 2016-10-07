@@ -15,6 +15,14 @@ numpy(1.11.1)
 matplotlib(1.5.1)
 sklearn(0.17.1)
 
+##Structure
+
+Data:  You can find it in /data.
+
+Report: You can find it in a .pdf inside /report.
+
+Code: You cand find it inside the /scripts folder.
+
 ##Suporting material
 
 ###Books: 
