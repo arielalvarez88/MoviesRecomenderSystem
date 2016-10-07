@@ -60,17 +60,50 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
         self.correlation_mtx, _ = self.pc_computer.compute_pc(self.pivoted_data)
         
         return self
-
-    def predict(self, to_predict):       
-        """Method to predicts the ratings.
-                
+    
+    def zero_except_k_neighbors(self, correlation_mtx_k):        
+        """ Set to 0 the correlation of index of anyone who is not in the k neighbors.
+        
         Args:
+        
+            correlation_mtx (pandas.DataFrame): The correlation matrix to clear.
             
-            X (pandas.Dataframe): Data to predict. It has two columns:
-            'user_id' and 'movie_id'.            
-                
-        """                
-                
+        Return:
+        
+            pandas.DataFrame : The correlation matrix with the coefficients that
+                are not the k nearest neighbors in zero.
+        
+        """
+        for column in correlation_mtx_k.columns.values:
+            data = correlation_mtx_k.loc[:, column].to_dict()
+           
+            sorted_data = sorted(data.iteritems(), key=operator.itemgetter(1))
+            last_index = -self.neighbors_count if self.neighbors_count <= len(sorted_data) else -len(sorted_data) 
+            neighbors_to_eliminate = sorted_data[0 : last_index]
+            correlation_mtx_k.loc[dict(neighbors_to_eliminate).keys(), column] = 0
+            
+        return correlation_mtx_k
+    
+    def get_reduced_matrices (self, to_predict):
+        """ Get correlation and pivoted_data with only relevant movies for this prediction.
+        
+        This method will remove the movies that are not necessary from the 
+        pivoted data and the correlation matrix.
+        
+        Args: 
+            
+            to_predict(pandas.DataFrame) : Data to predict. It has two columns:
+            'user_id' and 'movie_id'.
+        
+        Returns:
+        
+            pandas.DataFrame: The pivoted data only with the movies relevant 
+                to this prediction.
+            
+            pandas.DataFrame: The correlation matrix only with the movies relevant 
+                to this prediction.
+         
+        """
         all_movies = set(to_predict['movie_id'].values).union(self.pivoted_data.columns.values)
         all_movies = pd.Series(list(all_movies))
         movies_to_predict_idxs = all_movies.isin( to_predict['movie_id'] )
@@ -81,19 +114,32 @@ class RatingsEstimator(BaseEstimator, ClassifierMixin):
         
         #Make 0 the correlation between an item with himself so it doesnt count in the predictions. 
         correlation_mtx_k.loc[all_movies[movies_to_predict_idxs], all_movies[movies_to_predict_idxs]] = 0
-        
-        
+                
          
         to_predict_pivot.iloc[:,:] = np.nan_to_num(to_predict_pivot) 
         correlation_mtx_k.iloc[:,:] = np.nan_to_num(correlation_mtx_k)
          
-        for column in correlation_mtx_k.columns.values:
-            data = correlation_mtx_k.loc[:, column].to_dict()
-           
-            sorted_data = sorted(data.iteritems(), key=operator.itemgetter(1))
-            last_index = -self.neighbors_count if self.neighbors_count <= len(sorted_data) else -len(sorted_data) 
-            neighbors_to_eliminate = sorted_data[0 : last_index]
-            correlation_mtx_k.loc[dict(neighbors_to_eliminate).keys(), column] = 0 
+        correlation_mtx_k = self.zero_except_k_neighbors(correlation_mtx_k)
+            
+        return to_predict_pivot , correlation_mtx_k 
+    
+
+    def predict(self, to_predict):       
+        """Method to predicts the ratings.
+                
+        Args:
+            
+            to_predict (pandas.Dataframe): Data to predict. It has two columns:
+            'user_id' and 'movie_id'.            
+        
+        Returns:
+            
+            list: The predictions.
+        """                
+        
+        to_predict_pivot , correlation_mtx_k = self.get_reduced_matrices(to_predict)
+        
+        
                     
         time_predicting = datetime.now()         
 
