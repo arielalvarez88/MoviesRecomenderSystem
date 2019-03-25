@@ -23,7 +23,7 @@ Report: You can find it in a .pdf inside /report.
 
 Code: You cand find it inside the /scripts folder.
 
-##Suporting material
+## Suporting material
 
 ### Books: 
 
